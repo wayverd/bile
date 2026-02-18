@@ -1,0 +1,11 @@
+{
+    "editor.formatOnSave": false,
+    "files.associations": {
+        "*.css": "css",
+        "*.html": "jinja-html",
+        "*.xml": "jinja-xml",
+    },
+    "[rust]": {
+        "editor.formatOnSave": true
+    }
+}

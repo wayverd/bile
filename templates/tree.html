@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{repo|repo_name}} {{path.display()}} - {{crate::config().site_name}}{% endblock %}
+
+{% block content %}
+  {% include "repo-navbar.html" %}
+  <div class="main">
+    <table>
+      <tbody>
+        <tr>
+          <td>
+            {% if path.to_string_lossy() != "" %}
+              <h3>{{path.to_string_lossy()}}/@<a href="/{{repo|repo_name|urlencode_strict}}/tree/{{spec}}">{{spec}}</a></h3>
+            {% else %}
+              <h3>{{ spec }}</h3>
+            {% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    {% include "last-commit.html" %}
+    <table id="files">
+      <thead>
+        <tr>
+          <th>Mode</th>
+          <th>Name</th>
+          <th>Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in tree %}
+          <tr>
+            <td class="permissions">
+              {{ entry.filemode()|unix_perms }}
+            </td>
+            {% let obj = entry.to_object(repo.as_inner()) %}
+            {% if obj.is_ok() %}
+              {% let o = obj.unwrap() %}
+              <td class="file-name">
+                <a href="/{{repo|repo_name|urlencode_strict}}/tree/{{ spec }}/item/{{path.join(entry.name().unwrap()).to_string_lossy()}}">{{entry.name().unwrap() }}{% if o.as_tree().is_some() %}/{% endif %}</a>
+              </td>
+              <td class="file-size">
+                {% if o.as_blob().is_some() %}
+                  {{ o.into_blob().unwrap().content().len()|filesizeformat }}
+                {% endif %}
+              </td>
+            {% else %}
+              <td class="file-name">{{ entry.name().unwrap() }}</td>
+              <td class="file-size"></td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

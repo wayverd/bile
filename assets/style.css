@@ -1,0 +1,286 @@
+/* theme */
+
+:root {
+  --bg: #141415;
+  --fg: #cdcdcd;
+  --line: #252530;
+  --comment: #606079;
+  --builtin: #b4d4cf;
+  --func: #c48282;
+  --string: #e8b589;
+  --number: #e0a363;
+  --property: #c3c3d5;
+  --constant: #aeaed1;
+  --parameter: #bb9dbd;
+  --visual: #333738;
+  --error: #d8647e;
+  --warning: #f3be7c;
+  --hint: #7e98e8;
+  --operator: #90a0b5;
+  --keyword: #6e94b2;
+  --type: #9bb4bc;
+  --search: #405065;
+  --plus: #7fa563;
+  --delta: #f3be7c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141415;
+    --fg: #cdcdcd;
+    --line: #252530;
+    --comment: #606079;
+    --builtin: #b4d4cf;
+    --func: #c48282;
+    --string: #e8b589;
+    --number: #e0a363;
+    --property: #c3c3d5;
+    --constant: #aeaed1;
+    --parameter: #bb9dbd;
+    --visual: #333738;
+    --error: #d8647e;
+    --warning: #f3be7c;
+    --hint: #7e98e8;
+    --operator: #90a0b5;
+    --keyword: #6e94b2;
+    --type: #9bb4bc;
+    --search: #405065;
+    --plus: #7fa563;
+    --delta: #f3be7c;
+  }
+}
+
+/* core */
+
+body {
+  font-family: monospace;
+  word-wrap: break-word;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid white;
+  height: 1px;
+}
+
+table {
+  border-spacing: 0.5em 0.1em;
+}
+
+.clone-url {
+  -webkit-user-select: all; /* Safari */
+  user-select: all; /* Standard syntax */
+}
+
+.repo-last-updated {
+  font-style: italic;
+  /* so digits of the dates are aligned */
+  font-variant-numeric: tabular-nums;
+}
+
+.filesize {
+  text-align: right;
+}
+
+.footer {
+  text-align: center;
+  font-style: italic;
+}
+
+a.line {
+  display: inline-block;
+  width: 4em;
+  margin-right: 0.7em;
+  text-align: right;
+  text-decoration: none;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently */
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: 1em;
+  margin: 0;
+}
+
+.readme {
+  max-width: 80ch;
+}
+
+.readme h1,
+.readme h2,
+.readme h3,
+.readme h4,
+.readme h5,
+.readme h6 {
+  font-size: 1em;
+  margin: revert;
+}
+
+.readme pre {
+  margin-bottom: 12px;
+  margin-top: 12px;
+}
+
+pre {
+  line-height: 1.2;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+td {
+  white-space: nowrap;
+  margin: 0;
+  border-style: hidden;
+  padding: 0;
+}
+
+table td {
+  padding: 0 0.1em;
+}
+
+table.core {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.badge {
+  padding: 0.2em;
+}
+
+a.feed > img {
+  height: 1em;
+}
+
+#index tr td:nth-child(2),
+#tags tr td:nth-child(3),
+#branches tr td:nth-child(3),
+#log tr td:nth-child(3) {
+  white-space: normal;
+}
+
+#files .file-name {
+  width: 100%;
+}
+
+.repo {
+  width: 100%;
+}
+.repo .repo-link {
+  width: 100%;
+}
+.repo .repo-description {
+  text-wrap: wrap;
+  width: 100%;
+}
+
+#log .commit-files-modified,
+#log .commit-lines-added,
+#log .commit-lines-removed {
+  text-align: right;
+}
+#log .commit-summary {
+  text-wrap: wrap;
+  width: 100%;
+}
+
+@media only screen and (max-width: 600px) {
+  #log .commit-author-email,
+  #log .commit-date,
+  #log .commit-files-modified,
+  #log .commit-lines-added,
+  #log .commit-lines-removed {
+    display: none;
+  }
+}
+
+.markup.italic {
+  font-style: italic;
+}
+
+.markup.bold {
+  font-weight: bold;
+}
+
+/* theming */
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+}
+
+a  {
+  color: var(--hint);
+}
+a:hover {
+  background-color: var(--line);
+}
+
+hr {
+  border-top-color: var(--comment);
+}
+
+.badge {
+  color: var(--bg);
+  background-color: var(--warning);
+}
+
+.badge.tag {
+  background-color: var(--orange);
+}
+
+.repo:hover,
+#branches tr:hover td,
+#tags tr:hover td,
+#index tr:hover td,
+#log tr:hover td,
+#files tr:hover td {
+  background-color: var(--line);
+}
+
+.source .comment {
+  color: var(--comment);
+}
+
+.source .constant {
+  color: var(--constant);
+}
+
+.source .deleted {
+  color: var(--delta);
+}
+
+.source .function.name {
+  color: var(--func);
+}
+
+.source .inserted {
+  color: var(--plus);
+}
+
+.source .keyword,
+.source .storage {
+  color: var(--keyword);
+}
+
+.source .operator {
+  color: var(--operator);
+}
+
+.source .parameter {
+  color: var(--parameter);
+}
+
+.source .string.quoted {
+  color: var(--string);
+}

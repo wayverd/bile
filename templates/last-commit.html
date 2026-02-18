@@ -1,0 +1,21 @@
+<hr/>
+<table id="log">
+  <thead>
+    <tr>
+      <th class="commit-date">Date</th>
+      <th class="commit-summary">Commit Message</th>
+      <th class="commit-author-email">Author</th>
+      <th class="commit-files-modified">Files</th>
+      <th class="commit-lines-added">+</th>
+      <th class="commit-lines-removed">-</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% let commit = last_commit.clone() %}
+    {% include "commit-tr.html" %}
+    <tr>
+      <td colspan="6"><a href="/{{repo|repo_name|urlencode_strict}}/log/{{spec}}/{{path.display()}}">...</a></td>
+    </tr>
+  </tbody>
+</table>
+<hr/>

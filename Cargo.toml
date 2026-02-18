@@ -1,0 +1,45 @@
+[package]
+name = "bile"
+version = "0.1.0"
+authors = [
+    "alex wennerberg <alex@alexwennerberg.com>",
+    "Jay Jackson <jj@jj.is-a.dev>",
+    "wayver <wayver.dev@gmail.com>",
+]
+edition = "2024"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+ansi-to-html = "0.2.2"
+anyhow = "1.0.99"
+askama = "0.15.4"
+axum = { version = "0.8.4", features = ["tracing"] }
+axum-response-cache = "0.4.0"
+clap = { version = "4.5.44", features = ["derive", "string"] }
+comrak = { version = "0.50.0", default-features = false }
+figment = { version = "0.10.19", default-features = false, features = ["env", "toml"] }
+git2 = { version = "0.20.2", default-features = false }
+hitbox = "0.2.1"
+hitbox-http = "0.2.0"
+hitbox-moka = "0.2.0"
+hitbox-tower = "0.2.0"
+http = "1.4.0"
+jiff = "0.2.15"
+mimalloc = "0.1.47"
+mime = "0.3.17"
+num-conv = "0.2.0"
+serde = { version = "1.0.219", features = ["derive"] }
+syntect = { version = "5.2.0", default-features = false, features = ["default-fancy"] }
+thiserror = "2.0.14"
+tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread", "signal", "fs"] }
+tower = "0.5.2"
+tower-helmet = "0.3.0"
+tower-http = { version = "0.6.6", features = ["timeout", "trace"] }
+tracing = "0.1.41"
+tracing-error = "0.2.1"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+two-face = { version = "0.5.1", default-features = false, features = ["syntect-fancy"] }
+
+[profile.release]
+codegen-units = 1
+lto = true

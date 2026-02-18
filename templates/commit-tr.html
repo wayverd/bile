@@ -1,0 +1,10 @@
+<tr>
+  {% let stats = repo.commit_stats(commit) %}
+  <td class="commit-date">{{commit.time()|format_datetime("%Y-%m-%d %H:%M")}}</td>
+  {% let summary = commit.summary().unwrap_or("")|truncate(72) %}
+  <td class="commit-summary"><a href="/{{repo|repo_name|urlencode_strict}}/commit/{{commit.id()}}">{{summary}}</a></td>
+  <td class="commit-author-email">{{commit.author()|ref|signature_email_link|safe}}</td>
+  <td class="commit-files-modified">{% match stats|ref %}{% when Ok with (stats) %}{{ stats.files_changed() }}{% when _ %}0{% endmatch %}</td>
+  <td class="commit-lines-added">{% match stats|ref %}{% when Ok with (stats) %}{{ stats.insertions() }}{% when _ %}0{% endmatch %}</td>
+  <td class="commit-lines-removed">{% match stats|ref %}{% when Ok with (stats) %}{{ stats.deletions() }}{% when _ %}0{% endmatch %}</td>
+</tr>

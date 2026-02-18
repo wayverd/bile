@@ -1,0 +1,102 @@
+use git2::{Commit, Signature, Time};
+use jiff::{
+    Timestamp,
+    tz::{self, TimeZone},
+};
+use num_conv::Truncate as _;
+
+use crate::utils::git::Repository;
+
+#[askama::filter_fn]
+#[tracing::instrument(skip_all)]
+pub fn format_datetime<'f>(
+    time: Time,
+    _: &dyn askama::Values,
+    format: &'f str,
+) -> askama::Result<jiff::fmt::strtime::Display<'f>> {
+    let tz = TimeZone::fixed(tz::offset((time.offset_minutes() / 60).truncate::<i8>()));
+
+    let timestamp = Timestamp::from_second(time.seconds()).map_err(|err| {
+        tracing::error!(err=%err, "failed to convert seconds into a timestamp");
+
+        askama::Error::Fmt
+    })?;
+
+    let zoned = timestamp.to_zoned(tz);
+
+    let format = zoned.strftime(format);
+
+    Ok(format)
+}
+
+#[askama::filter_fn]
+pub fn unix_perms(m: i32, _: &dyn askama::Values) -> askama::Result<String> {
+    // https://unix.stackexchange.com/questions/450480/file-permission-with-six-bytes-in-git-what-does-it-mean
+    // Git doesn't store arbitrary modes, only a subset of the values are
+    // allowed. Since the number of possible values is quite small, it is
+    // easiest to exhaustively match them.
+    Ok(match m {
+        0o040_000 => "drwxr-xr-x", // directory
+        0o100_755 => "-rwxr-xr-x", // regular file, executable
+        0o100_644 => "-rw-r--r--", // regular file, default umask
+        0o120_000 => "lrwxrwxrwx", // symlink
+        0o160_000 => "m---------", // submodule
+        _ => unreachable!("unknown file mode"),
+    }
+    .into())
+}
+
+#[askama::filter_fn]
+pub fn repo_name<'r>(repo: &'r Repository, _: &dyn askama::Values) -> askama::Result<&'r str> {
+    repo.name().ok_or(askama::Error::Fmt)
+}
+
+#[askama::filter_fn]
+pub fn description(repo: &Repository, _: &dyn askama::Values) -> askama::Result<String> {
+    Ok(repo.description())
+}
+
+#[askama::filter_fn]
+#[tracing::instrument(skip_all)]
+pub fn last_modified(repo: &Repository, _: &dyn askama::Values) -> askama::Result<Time> {
+    repo.last_modified().map_err(|err| {
+        tracing::error!(err=?err, "failed to get repo's last modified date");
+        askama::Error::Fmt
+    })
+}
+
+#[askama::filter_fn]
+pub fn repo_owner(repo: &Repository, _: &dyn askama::Values) -> askama::Result<String> {
+    Ok(repo.owner())
+}
+
+#[askama::filter_fn]
+pub fn signature_email_link(
+    signature: &Signature<'_>,
+    _: &dyn askama::Values,
+) -> askama::Result<String> {
+    let Some(email) = signature.email() else {
+        return Ok(signature.to_string());
+    };
+
+    Ok(format!(
+        "<a href=\"mailto:{}\">{}</a>",
+        email,
+        signature.name().unwrap_or("&#65533;")
+    ))
+}
+
+#[askama::filter_fn]
+#[tracing::instrument(skip_all)]
+pub fn short_id(commit: &Commit<'_>, _: &dyn askama::Values) -> askama::Result<String> {
+    let id = match commit.as_object().short_id() {
+        Ok(id) => id,
+        Err(err) => {
+            tracing::error!(err=?err, "failed to get short id of commit");
+
+            return Err(askama::Error::Fmt);
+        }
+    };
+
+    id.as_str().map(str::to_string).ok_or(askama::Error::Fmt)
+}

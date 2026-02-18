@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}{{repo|repo_name}} log at {{branch}} - {{crate::config().site_name}}{% endblock %}
+
+{% block head %}
+<link rel="alternate" type="application/rss+xml" title="{{repo|repo_name}} {{branch}} commits" href="log.xml">
+{% endblock %}
+
+{% block content %}
+  {% include "repo-navbar.html" %}
+  <table>
+    <tbody>
+      <tr>
+        <td><h3>{{branch}}</h3></td>
+        <td><a href="/{{repo|repo_name|urlencode_strict}}/log.xml" class="feed">[rss]</a></td>
+      </tr>
+    </tbody>
+  </table>
+  {% if next_page.is_some() %}
+    <a href="{{next_page.as_ref().unwrap()}}">older commits &rarr;</a>
+  {% endif %}
+  <hr>
+  <table id="log">
+    <thead>
+      <tr>
+        <th class="commit-date">Date</th>
+        <th class="commit-summary">Commit Message</th>
+        <th class="commit-author-email">Author</th>
+        <th class="commit-files-modified">Files</th>
+        <th class="commit-lines-added">+</th>
+        <th class="commit-lines-removed">-</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for commit in commits %}
+      {% include "commit-tr.html" %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if next_page.is_some() %}
+    <a href="{{next_page.as_ref().unwrap()}}">older commits &rarr;</a>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}{{repo|repo_name}} - {{crate::config().site_name}}{% endblock %}
+
+{% block content %}
+  {% include "repo-navbar.html" %}
+  <table id="log">
+    <thead>
+      <tr>
+        <th class="commit-date">Date</th>
+        <th class="commit-summary">Commit Message</th>
+        <th class="commit-author-email">Author</th>
+        <th class="commit-files-modified">Files</th>
+        <th class="commit-lines-added">+</th>
+        <th class="commit-lines-removed">-</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for commit in commits %}
+      {% include "commit-tr.html" %}
+      {% endfor %}
+      <tr>
+        <td colspan="6"><a href="/{{repo|repo_name|urlencode_strict}}/log/">...</a></td>
+      </tr>
+    </tbody>
+  </table>
+  <hr />
+  <div class="readme">
+    {% if !readme_text.is_empty() -%}
+      {{ readme_text|safe }}
+    {% else -%}
+      <em>(no README)</em>
+    {%- endif %}
+  </div>
+{% endblock %}
