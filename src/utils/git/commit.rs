@@ -217,7 +217,7 @@ impl Repository {
         let mut options = DiffOptions::new();
         options.pathspec(path.into_c_string()?);
 
-        let commit = revwalk
+        let last_commit = revwalk
             .filter_map(|oid| oid.ok().and_then(|oid| self.inner.find_commit(oid).ok()))
             .find(|walked_commit| {
                 let commit_tree = match walked_commit.tree() {
@@ -270,6 +270,8 @@ impl Repository {
                 }
             });
 
-        Ok(Some(commit.context("file was not part of any commit")?))
+        Ok(Some(
+            last_commit.context("file was not part of any commit")?,
+        ))
     }
 }

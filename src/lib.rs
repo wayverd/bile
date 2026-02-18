@@ -267,82 +267,96 @@ static STYLE_CSS: &str = include_str!("../assets/style.css");
 
 static META_PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub fn config() -> &'static Config {
+pub(crate) fn config() -> &'static Config {
     CONFIG
         .get()
         .unwrap_or_else(|| unreachable!("failed to get global config, this should not happen"))
 }
 
-pub fn set_config(config: Config) {
-    CONFIG.set(config).expect("config already set");
-}
+#[allow(missing_copy_implementations, clippy::empty_structs_with_brackets)]
+pub struct Bile {}
 
-#[rustfmt::skip]
-pub fn routes() -> Router {
-    // let backend = MokaBackend::builder().max_entries(10_000).build();
+impl Bile {
+    /// Create a new Bile 'instance'
+    ///
+    /// # Panics
+    ///
+    /// This will panic if you create multiple Bile instances.
+    ///
+    /// Which you shouldn't BTW.
+    pub fn init(config: Config) -> Self {
+        CONFIG.set(config).expect("config already set");
 
-    // let config = hitbox::Config::builder()
-    //     .request_predicate(predicates::request::Method::new(http::Method::GET).unwrap())
-    //     .response_predicate(hitbox::Neutral::new().status_code_class(predicates::response::StatusClass::Success))
-    //     .extractor(extractors::Method::new())
-    //     .policy(
-    //         hitbox::policy::PolicyConfig::builder()
-    //             .ttl(Duration::from_secs(60))
-    //             .stale(Duration::from_secs(30))
-    //             .build(),
-    //     )
-    //     .build();
+        Self {}
+    }
 
-    // let cache = hitbox_tower::Cache::builder()
-    //     .backend(backend.clone())
-    //     .config(config)
-    //     .build();
+    #[rustfmt::skip]
+    pub fn routes(&self) -> Router {
+        // let backend = MokaBackend::builder().max_entries(10_000).build();
 
-    Router::new()
-        .route("/", get(handlers::index::get))
-        // assets
-        .route("/apple-touch-icon.png", get(async || Png(APPLE_TOUCH_ICON_PNG)))
-        .route("/favicon.ico", get(async || Ico(FAVICON_ICO)))
-        .route("/icon-192-maskable.png", get(async || Png(ICON_192_MASKABLE)))
-        .route("/icon-192.png", get(async || Png(ICON_192)))
-        .route("/icon-512-maskable.png", get(async || Png(ICON_512_MASKABLE)))
-        .route("/icon-512.png", get(async || Png(ICON_512)))
-        .route("/manifest.json", get(async || Json(MANIFEST_JSON)))
-        .route("/robots.txt", get(async || Text(ROBOTS_TXT)))
-        .route("/style.css", get(async || Css(STYLE_CSS)))
-        //
-        .route("/{repo_name}", get(handlers::repo_home::get))
-        .route("/{repo_name}/", get(handlers::repo_home::get))
-        // git clone stuff
-        .route("/{repo_name}/info/refs", get(handlers::git::get_1))
-        .route("/{repo_name}/HEAD", get(handlers::git::get_1))
-        .route("/{repo_name}/objects/{*obj}", get(handlers::git::get_2))
-        // web pages
-        .route("/{repo_name}/commit/{commit}", get(handlers::repo_commit::get))
-        .route("/{repo_name}/refs", get(handlers::repo_refs::get))
-        .route("/{repo_name}/refs/", get(handlers::repo_refs::get))
-        .route("/{repo_name}/refs.xml", get(handlers::repo_refs_feed::get))
-        .route("/{repo_name}/refs/{tag}", get(handlers::repo_tag::get))
-        //
-        .route("/{repo_name}/log", get(handlers::repo_log::get_1))
-        .route("/{repo_name}/log/", get(handlers::repo_log::get_1))
-        .route("/{repo_name}/log.xml", get(handlers::repo_log_feed::get_1))
-        .route("/{repo_name}/log/{ref}", get(handlers::repo_log::get_2))
-        .route("/{repo_name}/log/{ref}/", get(handlers::repo_log::get_2))
-        .route("/{repo_name}/log/{ref}/feed.xml", get(handlers::repo_log_feed::get_2))
-        .route("/{repo_name}/log/{ref}/{*object_name}", get(handlers::repo_log::get_3))
-        //
-        .route("/{repo_name}/tree", get(handlers::repo_file::get_1))
-        .route("/{repo_name}/tree/", get(handlers::repo_file::get_1))
-        .route("/{repo_name}/tree/{ref}", get(handlers::repo_file::get_2))
-        .route("/{repo_name}/tree/{ref}/", get(handlers::repo_file::get_2))
-        .route("/{repo_name}/tree/{ref}/item/{*object_name}", get(handlers::repo_file::get_3))
-        .route("/{repo_name}/tree/{ref}/raw/{*object_name}", get(handlers::repo_file_raw::get))
-        //
-        .layer((
-            TraceLayer::new_for_http(),
-            TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(10)),
-            CacheLayer::with_lifespan(Duration::from_secs(60)).use_stale_on_failure(),
-            HelmetLayer::with_defaults(),
-        ))
+        // let config = hitbox::Config::builder()
+        //     .request_predicate(predicates::request::Method::new(http::Method::GET).unwrap())
+        //     .response_predicate(hitbox::Neutral::new().status_code_class(predicates::response::StatusClass::Success))
+        //     .extractor(extractors::Method::new())
+        //     .policy(
+        //         hitbox::policy::PolicyConfig::builder()
+        //             .ttl(Duration::from_secs(60))
+        //             .stale(Duration::from_secs(30))
+        //             .build(),
+        //     )
+        //     .build();
+
+        // let cache = hitbox_tower::Cache::builder()
+        //     .backend(backend.clone())
+        //     .config(config)
+        //     .build();
+
+        Router::new()
+            .route("/", get(handlers::index::get))
+            // assets
+            .route("/apple-touch-icon.png", get(async || Png(APPLE_TOUCH_ICON_PNG)))
+            .route("/favicon.ico", get(async || Ico(FAVICON_ICO)))
+            .route("/icon-192-maskable.png", get(async || Png(ICON_192_MASKABLE)))
+            .route("/icon-192.png", get(async || Png(ICON_192)))
+            .route("/icon-512-maskable.png", get(async || Png(ICON_512_MASKABLE)))
+            .route("/icon-512.png", get(async || Png(ICON_512)))
+            .route("/manifest.json", get(async || Json(MANIFEST_JSON)))
+            .route("/robots.txt", get(async || Text(ROBOTS_TXT)))
+            .route("/style.css", get(async || Css(STYLE_CSS)))
+            //
+            .route("/{repo_name}", get(handlers::repo_home::get))
+            .route("/{repo_name}/", get(handlers::repo_home::get))
+            // git clone stuff
+            .route("/{repo_name}/info/refs", get(handlers::git::get_1))
+            .route("/{repo_name}/HEAD", get(handlers::git::get_1))
+            .route("/{repo_name}/objects/{*obj}", get(handlers::git::get_2))
+            // web pages
+            .route("/{repo_name}/commit/{commit}", get(handlers::repo_commit::get))
+            .route("/{repo_name}/refs", get(handlers::repo_refs::get))
+            .route("/{repo_name}/refs/", get(handlers::repo_refs::get))
+            .route("/{repo_name}/refs.xml", get(handlers::repo_refs_feed::get))
+            .route("/{repo_name}/refs/{tag}", get(handlers::repo_tag::get))
+            //
+            .route("/{repo_name}/log", get(handlers::repo_log::get_1))
+            .route("/{repo_name}/log/", get(handlers::repo_log::get_1))
+            .route("/{repo_name}/log.xml", get(handlers::repo_log_feed::get_1))
+            .route("/{repo_name}/log/{ref}", get(handlers::repo_log::get_2))
+            .route("/{repo_name}/log/{ref}/", get(handlers::repo_log::get_2))
+            .route("/{repo_name}/log/{ref}/feed.xml", get(handlers::repo_log_feed::get_2))
+            .route("/{repo_name}/log/{ref}/{*object_name}", get(handlers::repo_log::get_3))
+            //
+            .route("/{repo_name}/tree", get(handlers::repo_file::get_1))
+            .route("/{repo_name}/tree/", get(handlers::repo_file::get_1))
+            .route("/{repo_name}/tree/{ref}", get(handlers::repo_file::get_2))
+            .route("/{repo_name}/tree/{ref}/", get(handlers::repo_file::get_2))
+            .route("/{repo_name}/tree/{ref}/item/{*object_name}", get(handlers::repo_file::get_3))
+            .route("/{repo_name}/tree/{ref}/raw/{*object_name}", get(handlers::repo_file_raw::get))
+            //
+            .layer((
+                TraceLayer::new_for_http(),
+                TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(10)),
+                CacheLayer::with_lifespan(Duration::from_secs(60)).use_stale_on_failure(),
+                HelmetLayer::with_defaults(),
+            ))
+    }
 }

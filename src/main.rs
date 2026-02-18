@@ -1,6 +1,6 @@
 #![deny(rust_2018_idioms, unsafe_code)]
 
-use bile::config::Config;
+use bile::{Bile, config::Config};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 #[tokio::main]
@@ -32,9 +32,9 @@ async fn main() -> bile::utils::error::Result<()> {
 
     let addr = format!("[::]:{}", config.port);
 
-    bile::set_config(config.finalize()?);
+    let bile = Bile::init(config.finalize()?);
 
-    let app = bile::routes();
+    let app = bile.routes();
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     tracing::info!("listening on {}", listener.local_addr()?);
