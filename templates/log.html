@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{repo|repo_name}} log at {{branch}} - {{crate::config().site_name}}{% endblock %}
+{% block title %}{{repo|repo_name}} log at {{branch}} - {{config.site_name}}{% endblock %}
 
 {% block head %}
 <link rel="alternate" type="application/rss+xml" title="{{repo|repo_name}} {{branch}} commits" href="log.xml">
@@ -17,7 +17,7 @@
     </tbody>
   </table>
   {% if next_page.is_some() %}
-    <a href="{{next_page.as_ref().unwrap()}}">older commits &rarr;</a>
+    <a href="/{{repo|repo_name|urlencode_strict}}/log/{{next_page.as_ref().unwrap()}}">older commits &rarr;</a>
   {% endif %}
   <hr>
   <table id="log">
@@ -38,6 +38,6 @@
     </tbody>
   </table>
   {% if next_page.is_some() %}
-    <a href="{{next_page.as_ref().unwrap()}}">older commits &rarr;</a>
+    <a href="/{{repo|repo_name|urlencode_strict}}/log/{{next_page.as_ref().unwrap()}}">older commits &rarr;</a>
   {% endif %}
 {% endblock %}

@@ -225,35 +225,31 @@
     clippy::wildcard_imports,
     clippy::zero_sized_map_values
 )]
-#![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_errors_doc, clippy::redundant_pub_crate)]
 
-pub mod handlers;
-pub mod utils;
+pub(crate) mod git;
+pub(crate) mod handlers;
+pub(crate) mod http;
+pub(crate) mod utils;
 
 pub mod config;
+pub mod error;
 
-use std::{
-    str,
-    sync::{LazyLock, OnceLock},
-    time::Duration,
-};
+use std::{str, time::Duration};
 
 use axum::{Router, http::StatusCode, routing::get};
 use axum_response_cache::CacheLayer;
-use syntect::parsing::SyntaxSet;
 use tower_helmet::HelmetLayer;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 
 use crate::{
     config::Config,
-    utils::response::{Css, Ico, Json, Png, Text},
+    http::BileState,
+    http::response::{Css, Ico, Json, Png, Text},
 };
 
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
-
-static CONFIG: OnceLock<Config> = OnceLock::new();
-static SYNTAXES: LazyLock<SyntaxSet> = LazyLock::new(two_face::syntax::extra_newlines);
 
 static APPLE_TOUCH_ICON_PNG: &[u8] = include_bytes!("../assets/apple-touch-icon.png");
 static FAVICON_ICO: &[u8] = include_bytes!("../assets/favicon.ico");
@@ -267,14 +263,10 @@ static STYLE_CSS: &str = include_str!("../assets/style.css");
 
 static META_PACKAGE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub(crate) fn config() -> &'static Config {
-    CONFIG
-        .get()
-        .unwrap_or_else(|| unreachable!("failed to get global config, this should not happen"))
-}
-
 #[allow(missing_copy_implementations, clippy::empty_structs_with_brackets)]
-pub struct Bile {}
+pub struct Bile {
+    state: BileState,
+}
 
 impl Bile {
     /// Create a new Bile 'instance'
@@ -284,10 +276,11 @@ impl Bile {
     /// This will panic if you create multiple Bile instances.
     ///
     /// Which you shouldn't BTW.
+    #[must_use]
     pub fn init(config: Config) -> Self {
-        CONFIG.set(config).expect("config already set");
-
-        Self {}
+        Self {
+            state: BileState::new(config, two_face::syntax::extra_newlines()),
+        }
     }
 
     #[rustfmt::skip]
@@ -351,6 +344,8 @@ impl Bile {
             .route("/{repo_name}/tree/{ref}/", get(handlers::repo_file::get_2))
             .route("/{repo_name}/tree/{ref}/item/{*object_name}", get(handlers::repo_file::get_3))
             .route("/{repo_name}/tree/{ref}/raw/{*object_name}", get(handlers::repo_file_raw::get))
+            //
+            .with_state(self.state.clone())
             //
             .layer((
                 TraceLayer::new_for_http(),

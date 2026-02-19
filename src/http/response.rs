@@ -1,12 +1,16 @@
 use axum::{
     http::{HeaderValue, StatusCode, header},
-    response::IntoResponse,
+    response::{IntoResponse, Response},
 };
 
-pub struct Css<T>(pub T);
+use crate::config::Config;
+
+pub(crate) type Result<T = Response, E = crate::error::Error> = std::result::Result<T, E>;
+
+pub(crate) struct Css<T>(pub T);
 
 impl<T: IntoResponse> IntoResponse for Css<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (
             [
                 (
@@ -24,10 +28,10 @@ impl<T: IntoResponse> IntoResponse for Css<T> {
     }
 }
 
-pub struct Ico<T>(pub T);
+pub(crate) struct Ico<T>(pub T);
 
 impl<T: IntoResponse> IntoResponse for Ico<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (
             [
                 (
@@ -45,10 +49,10 @@ impl<T: IntoResponse> IntoResponse for Ico<T> {
     }
 }
 
-pub struct Json<T>(pub T);
+pub(crate) struct Json<T>(pub T);
 
 impl<T: IntoResponse> IntoResponse for Json<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (
             [
                 (
@@ -66,10 +70,10 @@ impl<T: IntoResponse> IntoResponse for Json<T> {
     }
 }
 
-pub struct Png<T>(pub T);
+pub(crate) struct Png<T>(pub T);
 
 impl<T: IntoResponse> IntoResponse for Png<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (
             [
                 (
@@ -87,10 +91,10 @@ impl<T: IntoResponse> IntoResponse for Png<T> {
     }
 }
 
-pub struct Text<T>(pub T);
+pub(crate) struct Text<T>(pub T);
 
 impl<T: IntoResponse> IntoResponse for Text<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (
             [
                 (
@@ -108,10 +112,10 @@ impl<T: IntoResponse> IntoResponse for Text<T> {
     }
 }
 
-pub struct Html<T: askama::Template>(pub T);
+pub(crate) struct Html<T: askama::Template>(pub T);
 
 impl<T: askama::Template> IntoResponse for Html<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         match self.0.render() {
             Ok(rendered) => (
                 [
@@ -144,10 +148,10 @@ impl<T: askama::Template> IntoResponse for Html<T> {
     }
 }
 
-pub struct Xml<T: askama::Template>(pub T);
+pub(crate) struct Xml<T: askama::Template>(pub T);
 
 impl<T: askama::Template> IntoResponse for Xml<T> {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         match self.0.render() {
             Ok(rendered) => (
                 [
@@ -182,33 +186,33 @@ impl<T: askama::Template> IntoResponse for Xml<T> {
 
 #[must_use = "needs to be returned from a handler or otherwise turned into a Response to be useful"]
 #[derive(Debug, Clone)]
-pub struct Redirect {
+pub(crate) struct Redirect {
     status_code: StatusCode,
     location: HeaderValue,
 }
 
 impl Redirect {
-    pub const PERMANENT_ROOT: Self = Self {
+    pub(crate) const PERMANENT_ROOT: Self = Self {
         status_code: StatusCode::PERMANENT_REDIRECT,
         location: HeaderValue::from_static("/"),
     };
-    pub const TEMPORARY_ROOT: Self = Self {
+    pub(crate) const TEMPORARY_ROOT: Self = Self {
         status_code: StatusCode::TEMPORARY_REDIRECT,
         location: HeaderValue::from_static("/"),
     };
 
     #[tracing::instrument(skip_all)]
-    pub fn to(uri: &str) -> Option<Self> {
+    pub(crate) fn to(uri: &str) -> Option<Self> {
         Self::with_status_code(StatusCode::SEE_OTHER, uri)
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn temporary(uri: &str) -> Option<Self> {
+    pub(crate) fn temporary(uri: &str) -> Option<Self> {
         Self::with_status_code(StatusCode::TEMPORARY_REDIRECT, uri)
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn permanent(uri: &str) -> Option<Self> {
+    pub(crate) fn permanent(uri: &str) -> Option<Self> {
         Self::with_status_code(StatusCode::PERMANENT_REDIRECT, uri)
     }
 
@@ -236,7 +240,36 @@ impl Redirect {
 }
 
 impl IntoResponse for Redirect {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         (self.status_code, [(header::LOCATION, self.location)]).into_response()
+    }
+}
+
+#[derive(askama::Template)]
+#[template(path = "error.html")]
+pub(crate) struct ErrorPage<'c> {
+    config: &'c Config,
+    status: StatusCode,
+}
+
+impl<'c> ErrorPage<'c> {
+    pub(crate) const fn new(config: &'c Config) -> Self {
+        Self {
+            config,
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    pub(crate) const fn with_status(self, status: StatusCode) -> Self {
+        Self {
+            config: self.config,
+            status,
+        }
+    }
+}
+
+impl IntoResponse for ErrorPage<'_> {
+    fn into_response(self) -> Response {
+        (self.status, Html(self)).into_response()
     }
 }

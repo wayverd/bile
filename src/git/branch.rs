@@ -1,10 +1,10 @@
 use git2::{Branch, BranchType, Reference};
 
-use crate::utils::git::Repository;
+use crate::git::Repository;
 
 impl Repository {
     #[tracing::instrument(skip_all)]
-    pub fn branches(&self) -> crate::utils::error::Result<Vec<Reference<'_>>> {
+    pub(crate) fn branches(&self) -> crate::error::Result<Vec<Reference<'_>>> {
         let references = self.inner.references()?;
 
         let branches = references
@@ -16,10 +16,10 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn branches_of_type(
+    pub(crate) fn branches_of_type(
         &self,
         typ: BranchType,
-    ) -> crate::utils::error::Result<Vec<Branch<'_>>> {
+    ) -> crate::error::Result<Vec<Branch<'_>>> {
         let branches = self
             .inner
             .branches(Some(typ))?

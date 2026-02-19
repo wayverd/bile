@@ -184,6 +184,9 @@ a.feed > img {
   width: 100%;
 }
 
+#log .commit-author-email {
+  text-wrap: nowrap;
+}
 #log .commit-files-modified,
 #log .commit-lines-added,
 #log .commit-lines-removed {

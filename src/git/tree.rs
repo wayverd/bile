@@ -1,15 +1,13 @@
 use std::path::Path;
 
+use anyhow::Context as _;
 use git2::{Blob, Object, Tree};
 
-use crate::utils::{
-    error::{Context as _, Result},
-    git::Repository,
-};
+use crate::{error::Result, git::Repository};
 
 impl Repository {
     #[tracing::instrument(skip_all)]
-    pub fn tree_blob(&self, tree: &Tree<'_>, path: &Path) -> Result<Option<Blob<'_>>> {
+    pub(crate) fn tree_blob(&self, tree: &Tree<'_>, path: &Path) -> Result<Option<Blob<'_>>> {
         let Some(obj) = self.tree_object(tree, path)? else {
             return Ok(None);
         };
@@ -20,7 +18,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn tree_object(&self, tree: &Tree<'_>, path: &Path) -> Result<Option<Object<'_>>> {
+    pub(crate) fn tree_object(&self, tree: &Tree<'_>, path: &Path) -> Result<Option<Object<'_>>> {
         let entry = match tree
             .get_path(path)
             .context("failed to get object from tree")

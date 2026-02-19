@@ -4,7 +4,7 @@ use bile::{Bile, config::Config};
 use tracing_subscriber::{layer::SubscriberExt as _, util::SubscriberInitExt as _};
 
 #[tokio::main]
-async fn main() -> bile::utils::error::Result<()> {
+async fn main() -> bile::error::Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {

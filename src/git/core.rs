@@ -1,15 +1,13 @@
 use std::path::Path;
 
 use git2::{Reference, Time};
+use syntect::parsing::SyntaxSet;
 
-use crate::utils::{
-    error::{Context as _, Result},
-    git::Repository,
-};
+use crate::{error::Context as _, error::Result, git::Repository, http::extractor::Ref};
 
 impl Repository {
     #[must_use]
-    pub fn description(&self) -> String {
+    pub(crate) fn description(&self) -> String {
         let content = std::fs::read_to_string(self.path().join("description")).unwrap_or_default();
 
         let first = content.lines().next().unwrap_or_default();
@@ -18,24 +16,24 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn head(&self) -> Result<Reference<'_>> {
+    pub(crate) fn head(&self) -> Result<Reference<'_>> {
         let head = self.inner.head()?;
 
         Ok(head)
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn is_empty(&self) -> Result<bool> {
+    pub(crate) fn is_empty(&self) -> Result<bool> {
         Ok(self.inner.is_empty()?)
     }
 
     #[must_use]
-    pub fn is_shallow(&self) -> bool {
+    pub(crate) fn is_shallow(&self) -> bool {
         self.inner.is_shallow()
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn last_modified(&self) -> Result<Time> {
+    pub(crate) fn last_modified(&self) -> Result<Time> {
         let head = self.head()?;
         let commit = head.peel_to_commit()?;
         let time = commit.committer().when();
@@ -43,7 +41,7 @@ impl Repository {
         Ok(time)
     }
 
-    pub fn name(&self) -> Option<&str> {
+    pub(crate) fn name(&self) -> Option<&str> {
         self.inner
             .workdir()
             // use the path for bare repositories
@@ -53,7 +51,7 @@ impl Repository {
     }
 
     #[must_use]
-    pub fn owner(&self) -> String {
+    pub(crate) fn owner(&self) -> String {
         self.inner
             .config()
             .and_then(|config| config.get_string("gitweb.owner"))
@@ -61,12 +59,12 @@ impl Repository {
     }
 
     #[must_use]
-    pub fn path(&self) -> &Path {
+    pub(crate) fn path(&self) -> &Path {
         self.inner.path()
     }
 
     #[must_use]
-    pub fn readme(&self) -> String {
+    pub(crate) fn readme(&self, syntaxes: &SyntaxSet) -> String {
         use askama::filters::Escaper as _;
 
         enum ReadmeFormat {
@@ -118,18 +116,18 @@ impl Repository {
                     // already is HTML
                     ReadmeFormat::Html => text.to_string(),
                     // render Markdown to HTML
-                    ReadmeFormat::Markdown => crate::utils::markdown::render(text),
+                    ReadmeFormat::Markdown => crate::utils::markdown::render(syntaxes, text),
                 }
             })
             .unwrap_or_default()
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn ref_or_head_shorthand(&self, r#ref: Option<&str>) -> Result<String> {
+    pub(crate) fn ref_or_head_shorthand(&self, r#ref: Option<&Ref>) -> Result<String> {
         let head = self.head()?;
 
         let spec = r#ref
-            .map(str::to_string)
+            .map(|r| r.0.clone())
             .or_else(move || head.shorthand().map(str::to_string))
             .context("failed to get repo ref spec")?;
 

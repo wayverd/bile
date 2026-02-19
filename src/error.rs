@@ -1,7 +1,5 @@
 use std::{convert, fmt};
 
-use axum::response;
-use http::StatusCode;
 use tracing_error::SpanTrace;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -64,16 +62,6 @@ where
 impl tracing_error::ExtractSpanTrace for Error {
     fn span_trace(&self) -> Option<&SpanTrace> {
         Some(&self.span_trace)
-    }
-}
-
-impl response::IntoResponse for Error {
-    fn into_response(self) -> response::Response {
-        super::Error::Failure {
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-            err: self,
-        }
-        .into_response()
     }
 }
 

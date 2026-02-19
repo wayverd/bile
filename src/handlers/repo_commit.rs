@@ -1,37 +1,37 @@
 use std::fmt::Write as _;
 
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse as _, Response},
 };
-use git2::{
-    BranchType, Commit, DescribeFormatOptions, DescribeOptions, Diff, DiffFindOptions, DiffFormat,
-};
+use git2::{BranchType, DescribeFormatOptions, DescribeOptions, DiffFindOptions, DiffFormat};
 use syntect::{
     html::{ClassStyle, ClassedHTMLGenerator},
+    parsing::SyntaxSet,
     util::LinesWithEndings,
 };
 
 use crate::{
-    SYNTAXES,
-    utils::{
-        Error, Result,
-        error::Context as _,
-        extractor::{commit_checks, repo_name_checks},
-        filters,
-        git::Repository,
-        response::Html,
-        spawn_blocking,
+    BileState,
+    config::Config,
+    error::Context as _,
+    git::Repository,
+    http::{
+        extractor::{Commit, RepoName},
+        response::{ErrorPage, Html, Result},
     },
+    utils::filters,
 };
 
 #[derive(askama::Template)]
 #[template(path = "commit.html")]
 struct RepoCommitTemplate<'a> {
+    config: &'a Config,
+    syntaxes: &'a SyntaxSet,
     repo: &'a Repository,
-    commit: Commit<'a>,
-    diff: &'a Diff<'a>,
+    commit: git2::Commit<'a>,
+    diff: &'a git2::Diff<'a>,
 }
 
 impl RepoCommitTemplate<'_> {
@@ -61,12 +61,13 @@ impl RepoCommitTemplate<'_> {
         });
 
         // highlight the diff
-        let syntax = SYNTAXES
+        let syntax = self
+            .syntaxes
             .find_syntax_by_name("Diff")
             .expect("diff syntax missing");
 
         let mut highlighter =
-            ClassedHTMLGenerator::new_with_class_style(syntax, &SYNTAXES, ClassStyle::Spaced);
+            ClassedHTMLGenerator::new_with_class_style(syntax, self.syntaxes, ClassStyle::Spaced);
 
         LinesWithEndings::from(&buf).for_each(|line| {
             if let Err(err) = highlighter.parse_html_for_line_which_includes_newline(line) {
@@ -127,24 +128,28 @@ impl RepoCommitTemplate<'_> {
 }
 
 #[tracing::instrument(skip_all)]
-pub async fn get(Path((repo_name, commit)): Path<(String, String)>) -> Response {
-    spawn_blocking(move || inner(&repo_name, &commit).into_response()).await
+pub(crate) async fn get(
+    state: State<BileState>,
+    Path((repo_name, commit)): Path<(RepoName, Commit)>,
+) -> Response {
+    state
+        .spawn(move |state| inner(&state, &repo_name, &commit))
+        .await
 }
 
 #[tracing::instrument(skip_all)]
-fn inner(repo_name: &str, commit: &str) -> Result {
-    repo_name_checks(repo_name)?;
-    commit_checks(commit)?;
-
-    let Some(repo) = Repository::open(repo_name).context("opening repository")? else {
-        return Err(Error::new(StatusCode::NOT_FOUND, "repo does not exist"));
+fn inner(state: &BileState, repo_name: &RepoName, commit: &Commit) -> Result<Response> {
+    let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
+    else {
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
-    let Some(commit) = repo.commit(commit).context("failed to get commit")? else {
-        return Err(Error::new(
-            StatusCode::NOT_FOUND,
-            "commit does not exist in repo",
-        ));
+    let Some(commit) = repo.commit(&commit.0).context("failed to get commit")? else {
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
     let mut diff = repo
@@ -159,6 +164,8 @@ fn inner(repo_name: &str, commit: &str) -> Result {
     }
 
     Ok(Html(RepoCommitTemplate {
+        config: &state.config,
+        syntaxes: &state.syntax,
         repo: &repo,
         commit,
         diff: &diff,

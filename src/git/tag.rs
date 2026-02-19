@@ -1,13 +1,14 @@
-use git2::{ObjectType, Tag};
+use git2::ObjectType;
 
-use crate::utils::{
+use crate::{
     error::Result,
     git::{Repository, TagEntry},
+    http::extractor::Tag,
 };
 
 impl Repository {
     #[tracing::instrument(skip_all)]
-    pub fn tag_entries(&self) -> Result<Vec<TagEntry>> {
+    pub(crate) fn tag_entries(&self) -> Result<Vec<TagEntry>> {
         let mut tags = Vec::new();
 
         self.inner.tag_foreach(|oid, name_bytes| {
@@ -40,8 +41,8 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn tag(&self, spec: &str) -> Result<Tag<'_>> {
-        let tag = self.inner.revparse_single(spec)?.peel_to_tag()?;
+    pub(crate) fn tag(&self, spec: &Tag) -> Result<git2::Tag<'_>> {
+        let tag = self.inner.revparse_single(&spec.0)?.peel_to_tag()?;
 
         Ok(tag)
     }

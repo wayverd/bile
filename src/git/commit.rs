@@ -2,14 +2,11 @@ use std::ffi::CString;
 
 use git2::{Commit, Diff, DiffOptions, DiffStats, Sort, Tree};
 
-use crate::utils::{
-    error::{Context as _, Result},
-    git::Repository,
-};
+use crate::{error::Context as _, error::Result, git::Repository, http::extractor::ObjectName};
 
 impl Repository {
     #[tracing::instrument(skip_all)]
-    pub fn commit(&self, spec: &str) -> Result<Option<Commit<'_>>> {
+    pub(crate) fn commit(&self, spec: &str) -> Result<Option<Commit<'_>>> {
         let obj = match self.inner.revparse_single(spec) {
             Ok(obj) => obj,
             Err(err) => {
@@ -30,7 +27,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commit_diff(&self, commit: &Commit<'_>) -> Result<Diff<'_>> {
+    pub(crate) fn commit_diff(&self, commit: &Commit<'_>) -> Result<Diff<'_>> {
         let mut options = DiffOptions::new();
 
         // This is identical to getting "commit^" and on merges this will be the
@@ -47,7 +44,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commit_stats(&self, commit: &Commit<'_>) -> Result<DiffStats> {
+    pub(crate) fn commit_stats(&self, commit: &Commit<'_>) -> Result<DiffStats> {
         let diff = self.commit_diff(commit)?;
 
         let stats = diff.stats()?;
@@ -56,7 +53,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commit_tree(&self, spec: &str) -> Result<Option<(Commit<'_>, Tree<'_>)>> {
+    pub(crate) fn commit_tree(&self, spec: &str) -> Result<Option<(Commit<'_>, Tree<'_>)>> {
         let Some(commit) = self.commit(spec)? else {
             return Ok(None);
         };
@@ -67,7 +64,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commits(&self, spec: &str, amount: usize) -> Result<Option<Vec<Commit<'_>>>> {
+    pub(crate) fn commits(&self, spec: &str, amount: usize) -> Result<Option<Vec<Commit<'_>>>> {
         if self.is_shallow() {
             return self.commits_shallow();
         }
@@ -76,7 +73,11 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commits_full(&self, spec: &str, amount: usize) -> Result<Option<Vec<Commit<'_>>>> {
+    pub(crate) fn commits_full(
+        &self,
+        spec: &str,
+        amount: usize,
+    ) -> Result<Option<Vec<Commit<'_>>>> {
         let mut revwalk = self.inner.revwalk()?;
 
         let Some(commit) = self.commit(spec)? else {
@@ -96,13 +97,12 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commits_for_obj(
+    pub(crate) fn commits_for_obj(
         &self,
         spec: &str,
         amount: usize,
-        obj: Option<&str>,
+        obj: Option<&ObjectName>,
     ) -> Result<Option<Vec<Commit<'_>>>> {
-        tracing::info!("is_shallow");
         if self.is_shallow() {
             return self
                 .commits_shallow()
@@ -112,7 +112,6 @@ impl Repository {
         let mut revwalk = self.inner.revwalk().context("failed to create revwalk")?;
 
         let Some(commit) = self.commit(spec).context("failed to get commit")? else {
-            tracing::info!("commit None");
             return Ok(None);
         };
 
@@ -127,7 +126,7 @@ impl Repository {
         let commits =
             revwalk.filter_map(|oid| oid.ok().and_then(|oid| self.inner.find_commit(oid).ok()));
 
-        let Some(Ok(path)) = obj.map(CString::new) else {
+        let Some(Ok(path)) = obj.map(|n| n.0.as_str()).map(CString::new) else {
             return Ok(Some(commits.take(amount).collect()));
         };
 
@@ -186,7 +185,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn commits_shallow(&self) -> Result<Option<Vec<Commit<'_>>>> {
+    pub(crate) fn commits_shallow(&self) -> Result<Option<Vec<Commit<'_>>>> {
         tracing::warn!("repository {:?} is only a shallow clone", self.inner.path());
         let commits = self
             .inner
@@ -199,7 +198,7 @@ impl Repository {
     }
 
     #[tracing::instrument(skip_all)]
-    pub fn file_last_commit<P: git2::IntoCString>(
+    pub(crate) fn file_last_commit<P: git2::IntoCString>(
         &self,
         spec: &str,
         path: P,

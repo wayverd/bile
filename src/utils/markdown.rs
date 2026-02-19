@@ -15,12 +15,10 @@ use syntect::{
     util::LinesWithEndings,
 };
 
-use crate::SYNTAXES;
-
 #[tracing::instrument(skip_all)]
-pub fn render(input: &str) -> String {
+pub(crate) fn render(syntaxes: &SyntaxSet, input: &str) -> String {
     let adaptor = SyntectAdapter {
-        syntax_set: &SYNTAXES,
+        syntax_set: syntaxes,
     };
 
     let options = Options::default();
@@ -32,11 +30,11 @@ pub fn render(input: &str) -> String {
     markdown_to_html_with_plugins(input, &options, &plugins)
 }
 
-struct SyntectAdapter {
-    syntax_set: &'static SyntaxSet,
+struct SyntectAdapter<'s> {
+    syntax_set: &'s SyntaxSet,
 }
 
-impl SyntectAdapter {
+impl SyntectAdapter<'_> {
     fn highlight_html(&self, code: &str, syntax: &SyntaxReference) -> Result<String, Error> {
         let mut html_generator =
             ClassedHTMLGenerator::new_with_class_style(syntax, self.syntax_set, ClassStyle::Spaced);
@@ -47,7 +45,7 @@ impl SyntectAdapter {
     }
 }
 
-impl SyntaxHighlighterAdapter for SyntectAdapter {
+impl SyntaxHighlighterAdapter for SyntectAdapter<'_> {
     fn write_highlighted(
         &self,
         output: &mut dyn Write,

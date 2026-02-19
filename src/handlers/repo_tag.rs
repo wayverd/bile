@@ -1,38 +1,46 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use git2::Tag;
 
-use crate::utils::{
-    Error, Result,
+use crate::{
+    BileState,
+    config::Config,
     error::Context as _,
-    extractor::repo_name_checks,
-    filters,
     git::Repository,
-    response::{Html, Redirect},
-    spawn_blocking,
+    http::{
+        extractor::{RepoName, Tag},
+        response::{ErrorPage, Html, Redirect, Result},
+    },
+    utils::filters,
 };
 
 #[derive(askama::Template)]
 #[template(path = "tag.html")]
 struct Template<'a> {
+    config: &'a Config,
     repo: &'a Repository,
-    tag: Tag<'a>,
+    tag: git2::Tag<'a>,
 }
 
 #[tracing::instrument(skip_all)]
-pub async fn get(Path((repo_name, tag)): Path<(String, String)>) -> Response {
-    spawn_blocking(move || inner(&repo_name, &tag).into_response()).await
+pub(crate) async fn get(
+    state: State<BileState>,
+    Path((repo_name, tag)): Path<(RepoName, Tag)>,
+) -> Response {
+    state
+        .spawn(move |state| inner(&state, &repo_name, &tag))
+        .await
 }
 
 #[tracing::instrument(skip_all)]
-fn inner(repo_name: &str, tag: &str) -> Result {
-    repo_name_checks(repo_name)?;
-
-    let Some(repo) = Repository::open(repo_name).context("opening repository")? else {
-        return Err(Error::new(StatusCode::NOT_FOUND, "repo does not exist"));
+fn inner(state: &BileState, repo_name: &RepoName, tag: &Tag) -> Result<Response> {
+    let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
+    else {
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
     let Ok(repo_tag) = repo.tag(tag) else {
@@ -42,6 +50,7 @@ fn inner(repo_name: &str, tag: &str) -> Result {
     };
 
     Ok(Html(Template {
+        config: &state.config,
         repo: &repo,
         tag: repo_tag,
     })

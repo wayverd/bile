@@ -1,29 +1,47 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     http::{HeaderValue, StatusCode, Uri, header},
     response::{IntoResponse as _, Response},
 };
 
-use crate::utils::{
-    Error, Result, error::Context as _, extractor::repo_name_checks, git::Repository,
-    spawn_blocking,
+use crate::{
+    BileState,
+    error::Context as _,
+    git::Repository,
+    http::{
+        extractor::RepoName,
+        response::{ErrorPage, Result},
+    },
 };
 
 #[tracing::instrument(skip_all)]
-pub async fn get_1(uri: Uri, Path(repo_name): Path<String>) -> Response {
-    spawn_blocking(move || inner(&uri, &repo_name).into_response()).await
+pub(crate) async fn get_1(
+    state: State<BileState>,
+    uri: Uri,
+    Path(repo_name): Path<RepoName>,
+) -> Response {
+    state
+        .spawn(move |state| inner(&state, &uri, &repo_name))
+        .await
 }
 
 #[tracing::instrument(skip_all)]
-pub async fn get_2(uri: Uri, Path((repo_name, _)): Path<(String, String)>) -> Response {
-    spawn_blocking(move || inner(&uri, &repo_name).into_response()).await
+pub(crate) async fn get_2(
+    state: State<BileState>,
+    uri: Uri,
+    Path((repo_name, _)): Path<(RepoName, String)>,
+) -> Response {
+    state
+        .spawn(move |state| inner(&state, &uri, &repo_name))
+        .await
 }
 
-fn inner(uri: &Uri, repo_name: &str) -> Result {
-    repo_name_checks(repo_name)?;
-
-    let Some(repo) = Repository::open(repo_name).context("opening repository")? else {
-        return Err(Error::new(StatusCode::NOT_FOUND, "repo does not exist"));
+fn inner(state: &BileState, uri: &Uri, repo_name: &RepoName) -> Result<Response> {
+    let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
+    else {
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
     let path = uri
@@ -35,10 +53,9 @@ fn inner(uri: &Uri, repo_name: &str) -> Result {
 
     // cant canonicalize if it doesnt exist
     if !path.exists() {
-        return Err(Error::new(
-            StatusCode::NOT_FOUND,
-            "This page does not exist.",
-        ));
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     }
 
     let path = path.canonicalize().context("canonicalize new path")?;
@@ -46,19 +63,17 @@ fn inner(uri: &Uri, repo_name: &str) -> Result {
     // that path got us outside of the repository structure somehow
     if !path.starts_with(repo.path()) {
         tracing::warn!("Attempt to acces file outside of repo dir: {:?}", path);
-        return Err(Error::new(
-            StatusCode::FORBIDDEN,
-            "You do not have access to this file.",
-        ));
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::FORBIDDEN)
+            .into_response());
     }
 
     // Either the requested resource does not exist or it is not
     // a file, i.e. a directory.
     if !path.is_file() {
-        return Err(Error::new(
-            StatusCode::NOT_FOUND,
-            "This page does not exist.",
-        ));
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     }
 
     let body = std::fs::read(&path).context("reading file")?;

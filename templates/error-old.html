@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-title">
+    <h1>Hmm, that did not work.</h1>
+  </div>
+  <br>
+  <div>
+    {%- match self.kind -%}
+      {%- when ErrorKind::Failure { status, err } -%}
+        {% let debug = format!("{:?}", err) %}
+        {% let err = ansi_to_html::convert(&debug) %}
+        {%- match err -%}
+          {%- when Ok(err) -%}
+            {{status}} &mdash; <pre>{{ err|safe }}</pre>
+          {%- when Err(_) -%}
+            {{status}} &mdash; {{ debug }}
+        {%- endmatch -%}
+      {%- when ErrorKind::Custom { status, message } -%}
+        {{status}} &mdash; {{ message }}
+    {%- endmatch -%}
+  </div>
+{% endblock %}

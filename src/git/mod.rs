@@ -4,13 +4,13 @@ mod core;
 mod tag;
 mod tree;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use git2::{Object, Signature};
 
-use crate::utils::error::{Context as _, Result};
+use crate::{config::Config, error::Context as _, error::Result, http::extractor::RepoName};
 
-pub struct TagEntry {
+pub(crate) struct TagEntry {
     pub link: String,
     pub tag: String,
     pub message: String,
@@ -57,20 +57,17 @@ impl TagEntry {
     }
 }
 
-pub struct Repository {
+pub(crate) struct Repository {
     inner: git2::Repository,
 }
 
 impl Repository {
     #[tracing::instrument(skip_all)]
-    pub fn open<P>(path: P) -> Result<Option<Self>>
-    where
-        P: AsRef<Path>,
-    {
-        let config = crate::config();
+    pub(crate) fn open(config: &Config, name: &RepoName) -> Result<Option<Self>> {
+        Self::open_path(config, &PathBuf::from(&name.0))
+    }
 
-        let path = path.as_ref();
-
+    pub(crate) fn open_path(config: &Config, path: &Path) -> Result<Option<Self>> {
         let path = config.project_root.join(path);
 
         if !path.exists() {
@@ -109,7 +106,7 @@ impl Repository {
     }
 
     #[must_use]
-    pub const fn as_inner(&self) -> &git2::Repository {
+    pub(crate) const fn as_inner(&self) -> &git2::Repository {
         &self.inner
     }
 }

@@ -1,48 +1,70 @@
 use std::path;
 
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     http::{StatusCode, header},
     response::{IntoResponse as _, Response},
 };
 
-use crate::utils::{
-    Error, Result, blob_mime, error::Context as _, extractor::repo_name_checks, git::Repository,
-    spawn_blocking,
+use crate::{
+    BileState,
+    error::Context as _,
+    git::Repository,
+    http::{
+        extractor::{ObjectName, Ref, RepoName},
+        response::{ErrorPage, Result},
+    },
+    utils::blob_mime,
 };
 
 #[tracing::instrument(skip_all)]
-pub async fn get(
-    Path((repo_name, r#ref, object_name)): Path<(String, String, String)>,
+pub(crate) async fn get(
+    state: State<BileState>,
+    Path((repo_name, r#ref, object_name)): Path<(RepoName, Ref, ObjectName)>,
 ) -> Response {
-    spawn_blocking(move || inner(&repo_name, &r#ref, &object_name).into_response()).await
+    state
+        .spawn(move |state| inner(&state, &repo_name, &r#ref, &object_name))
+        .await
 }
 
 #[tracing::instrument(skip_all)]
-fn inner(repo_name: &str, r#ref: &str, object_name: &str) -> Result {
-    repo_name_checks(repo_name)?;
+fn inner(
+    state: &BileState,
+    repo_name: &RepoName,
+    r#ref: &Ref,
+    object_name: &ObjectName,
+) -> Result<Response> {
+    let repo = match Repository::open(&state.config, repo_name).context("opening repository") {
+        Ok(Some(repo)) => repo,
+        Ok(None) => {
+            return Ok(ErrorPage::new(&state.config)
+                .with_status(StatusCode::NOT_FOUND)
+                .into_response());
+        }
+        Err(err) => {
+            tracing::error!(err=?err, "failed to open repository");
 
-    let Some(repo) = Repository::open(repo_name).context("opening repository")? else {
-        return Err(Error::new(StatusCode::NOT_FOUND, "repo does not exist"));
+            return Ok(ErrorPage::new(&state.config)
+                .with_status(StatusCode::NOT_FOUND)
+                .into_response());
+        }
     };
 
-    let path = path::Path::new(&object_name);
+    let path = path::Path::new(&object_name.0);
 
     let Some((_, tree)) = repo
-        .commit_tree(r#ref)
+        .commit_tree(&r#ref.0)
         .context("failed to get commit tree")?
     else {
-        return Err(Error::new(
-            StatusCode::NOT_FOUND,
-            "commit does not exist in repo",
-        ));
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
     let Some(blob) = repo.tree_blob(&tree, path)? else {
-        return Err(Error::new(
-            StatusCode::NOT_FOUND,
-            "file does not exist into repo",
-        ));
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
     let extension = path

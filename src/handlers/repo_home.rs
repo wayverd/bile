@@ -1,45 +1,56 @@
 use axum::{
-    extract::Path,
+    extract::{Path, State},
     http::StatusCode,
     response::{IntoResponse as _, Response},
 };
-use git2::Commit;
 
-use crate::utils::{
-    Error, Result, error::Context as _, extractor::repo_name_checks, filters, git::Repository,
-    response::Html, spawn_blocking,
+use crate::{
+    BileState,
+    config::Config,
+    error::Context as _,
+    git::Repository,
+    http::{
+        extractor::RepoName,
+        response::{ErrorPage, Html, Result},
+    },
+    utils::filters,
 };
 
 #[derive(askama::Template)]
 #[template(path = "repo.html")]
 struct RepoHomeTemplate<'a> {
+    config: &'a Config,
     repo: &'a Repository,
-    commits: Vec<Commit<'a>>,
+    commits: Vec<git2::Commit<'a>>,
     readme_text: String,
 }
 
 #[tracing::instrument(skip_all)]
-pub async fn get(Path(repo_name): Path<String>) -> Response {
-    spawn_blocking(move || inner(&repo_name).into_response()).await
+pub(crate) async fn get(state: State<BileState>, Path(repo_name): Path<RepoName>) -> Response {
+    state.spawn(move |state| inner(&state, &repo_name)).await
 }
 
 #[tracing::instrument(skip_all)]
-fn inner(repo_name: &str) -> Result {
-    repo_name_checks(repo_name)?;
-
-    let Some(repo) = Repository::open(repo_name).context("opening repository")? else {
-        return Err(Error::new(StatusCode::NOT_FOUND, "repo does not exist"));
+fn inner(state: &BileState, repo_name: &RepoName) -> Result<Response> {
+    let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
+    else {
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
-    let readme_text = repo.readme();
+    let readme_text = repo.readme(&state.syntax);
 
     // TODO: let r = req.param("ref").unwrap_or("HEAD");
     let r = "HEAD";
     let Some(commits) = repo.commits(r, 3)? else {
-        return Err(Error::new(StatusCode::NOT_FOUND, "crepo does not exist"));
+        return Ok(ErrorPage::new(&state.config)
+            .with_status(StatusCode::NOT_FOUND)
+            .into_response());
     };
 
     Ok(Html(RepoHomeTemplate {
+        config: &state.config,
         repo: &repo,
         commits,
         readme_text,

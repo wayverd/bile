@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{repo|repo_name}} refs - {{crate::config().site_name}}{% endblock %}
+{% block title %}{{repo|repo_name}} refs - {{config.site_name}}{% endblock %}
 
 {% block head %}
 <link rel="alternate" type="application/rss+xml" title="{{repo|repo_name}} tags" href="refs.xml">

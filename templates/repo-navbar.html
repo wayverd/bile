@@ -1,8 +1,8 @@
-<table>
+<table class="repo">
   <tbody>
-    <tr><td><h1>{{repo|repo_name}}</h1></td></tr>
-    <tr><td>{{repo|description}}</td></tr>
-    <tr class="clone-url"><td>git clone <a href="{{crate::config().clone_base}}/{{repo|repo_name}}">{{crate::config().clone_base}}/{{repo|repo_name}}</a></td></tr>
+    <tr><td class="repo-link"><h1>{{repo|repo_name}}</h1></td></tr>
+    <tr><td class="repo-description">{{repo|description}}</td></tr>
+    <tr class="clone-url"><td>git clone <a href="{{config.clone_base}}/{{repo|repo_name}}">{{config.clone_base}}/{{repo|repo_name}}</a></td></tr>
     <tr class="navbar"><td><a href="/{{repo|repo_name|urlencode_strict}}">README</a> | <a href="/{{repo|repo_name|urlencode_strict}}/tree">tree</a> | <a href="/{{repo|repo_name|urlencode_strict}}/log">log</a> | <a href="/{{repo|repo_name|urlencode_strict}}/refs">refs</a></td></tr>
   </tbody>
 </table>

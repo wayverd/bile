@@ -35,7 +35,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load() -> crate::utils::error::Result<Self> {
+    pub fn load() -> crate::error::Result<Self> {
         let config: Self = Figment::new()
             .merge(Serialized::defaults(Self::parse()))
             .merge(Toml::file("bile.toml"))
@@ -45,7 +45,7 @@ impl Config {
         Ok(config)
     }
 
-    pub fn finalize(self) -> crate::utils::error::Result<Self> {
+    pub fn finalize(self) -> crate::error::Result<Self> {
         Ok(Self {
             port: self.port,
             project_root: self.project_root.canonicalize()?,
