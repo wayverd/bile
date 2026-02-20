@@ -1,6 +1,7 @@
 use std::fmt;
 
 use serde::de::Error as _;
+use trim_in_place::TrimInPlace as _;
 
 pub(crate) struct Commit(pub String);
 
@@ -15,9 +16,11 @@ impl<'de> serde::Deserialize<'de> for Commit {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
+        let mut value = String::deserialize(deserializer)?;
 
-        if value.is_empty() {
+        value.trim_in_place();
+
+        if value.is_empty() || value.starts_with('.') {
             return Err(D::Error::custom("invalid commit ref"));
         }
 
@@ -44,7 +47,9 @@ impl<'de> serde::Deserialize<'de> for Obj {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
+        let mut value = String::deserialize(deserializer)?;
+
+        value.trim_in_place();
 
         if value.is_empty() {
             return Err(D::Error::custom("invalid object ref"));
@@ -67,7 +72,9 @@ impl<'de> serde::Deserialize<'de> for ObjectName {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
+        let mut value = String::deserialize(deserializer)?;
+
+        value.trim_in_place();
 
         if value.is_empty() {
             return Err(D::Error::custom("invalid object name"));
@@ -90,9 +97,11 @@ impl<'de> serde::Deserialize<'de> for Ref {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
+        let mut value = String::deserialize(deserializer)?;
 
-        if value.is_empty() {
+        value.trim_in_place();
+
+        if value.is_empty() || value.starts_with('.') {
             return Err(D::Error::custom("invalid ref"));
         }
 
@@ -113,9 +122,11 @@ impl<'de> serde::Deserialize<'de> for RepoName {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
+        let mut value = String::deserialize(deserializer)?;
 
-        if value.is_empty() {
+        value.trim_in_place();
+
+        if value.is_empty() || value.starts_with('.') {
             return Err(D::Error::custom("invalid repo name"));
         }
 
@@ -136,7 +147,9 @@ impl<'de> serde::Deserialize<'de> for Tag {
     where
         D: serde::Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
+        let mut value = String::deserialize(deserializer)?;
+
+        value.trim_in_place();
 
         if value.is_empty() {
             return Err(D::Error::custom("invalid tag"));

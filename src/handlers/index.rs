@@ -39,6 +39,19 @@ fn inner(state: &BileState) -> Result<Response> {
 
     for entry in read {
         let entry = entry.context("failed to open directory entry")?;
+        let metadata = entry.metadata().context("failed to get file metadata")?;
+
+        if !metadata.is_dir() {
+            continue;
+        }
+
+        if entry
+            .file_name()
+            .to_str()
+            .is_some_and(|p| p != "." && p.starts_with('.'))
+        {
+            continue;
+        }
 
         let Some(repo) = Repository::open_path(&state.config, &entry.path())
             .context("failed to open repository")?
