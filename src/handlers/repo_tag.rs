@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -11,6 +11,7 @@ use crate::{
     git::Repository,
     http::{
         extractor::{RepoName, Tag},
+        path::Path,
         response::{ErrorPage, Html, Redirect, Result},
     },
     utils::filters,
@@ -38,7 +39,7 @@ pub(crate) async fn get(
 fn inner(state: &BileState, repo_name: &RepoName, tag: &Tag) -> Result<Response> {
     let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };

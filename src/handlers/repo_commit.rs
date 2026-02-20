@@ -1,7 +1,7 @@
 use std::fmt::Write as _;
 
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse as _, Response},
 };
@@ -19,6 +19,7 @@ use crate::{
     git::Repository,
     http::{
         extractor::{Commit, RepoName},
+        path::Path,
         response::{ErrorPage, Html, Result},
     },
     utils::filters,
@@ -141,13 +142,13 @@ pub(crate) async fn get(
 fn inner(state: &BileState, repo_name: &RepoName, commit: &Commit) -> Result<Response> {
     let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };
 
     let Some(commit) = repo.commit(&commit.0).context("failed to get commit")? else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };

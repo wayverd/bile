@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use axum::{
     http::{HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
 };
 
-use crate::config::Config;
+use crate::{config::Config, http::BileState};
 
 pub(crate) type Result<T = Response, E = crate::error::Error> = std::result::Result<T, E>;
 
@@ -247,20 +249,13 @@ impl IntoResponse for Redirect {
 
 #[derive(askama::Template)]
 #[template(path = "error.html")]
-pub(crate) struct ErrorPage<'c> {
-    config: &'c Config,
+pub(crate) struct ErrorPage {
+    config: Arc<Config>,
     status: StatusCode,
 }
 
-impl<'c> ErrorPage<'c> {
-    pub(crate) const fn new(config: &'c Config) -> Self {
-        Self {
-            config,
-            status: StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-
-    pub(crate) const fn with_status(self, status: StatusCode) -> Self {
+impl ErrorPage {
+    pub(crate) fn with_status(self, status: StatusCode) -> Self {
         Self {
             config: self.config,
             status,
@@ -268,7 +263,25 @@ impl<'c> ErrorPage<'c> {
     }
 }
 
-impl IntoResponse for ErrorPage<'_> {
+impl From<BileState> for ErrorPage {
+    fn from(value: BileState) -> Self {
+        Self {
+            config: value.config,
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+impl<'s> From<&'s BileState> for ErrorPage {
+    fn from(value: &'s BileState) -> Self {
+        Self {
+            config: value.config.clone(),
+            status: StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+impl IntoResponse for ErrorPage {
     fn into_response(self) -> Response {
         (self.status, Html(self)).into_response()
     }

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse as _, Response},
 };
@@ -10,6 +10,7 @@ use crate::{
     git::Repository,
     http::{
         extractor::{Ref, RepoName},
+        path::Path,
         response::{ErrorPage, Result, Xml},
     },
     utils::filters,
@@ -44,14 +45,14 @@ pub(crate) async fn get_2(
 fn inner(state: &BileState, repo_name: &RepoName, r#ref: Option<&Ref>) -> Result<Response> {
     let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };
 
     if repo.is_empty()? {
         // show a server error
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::SERVICE_UNAVAILABLE)
             .into_response());
     }
@@ -59,7 +60,7 @@ fn inner(state: &BileState, repo_name: &RepoName, r#ref: Option<&Ref>) -> Result
     let r = r#ref.map_or("HEAD", |r| r.0.as_str());
 
     let Some(commits) = repo.commits(r, state.config.log_per_page)? else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };

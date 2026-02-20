@@ -1,4 +1,5 @@
 pub(crate) mod extractor;
+pub(crate) mod path;
 pub(crate) mod response;
 
 use std::sync::Arc;
@@ -31,7 +32,7 @@ impl BileState {
 
         let this = self.clone();
 
-        spawn_blocking(move || span.in_scope(|| wrap_err(&this.config.clone(), f(this)))).await
+        spawn_blocking(move || span.in_scope(|| wrap_err(this.clone(), f(this)))).await
     }
 }
 
@@ -47,13 +48,13 @@ where
         .expect("failed to join spawn_blocking call, this should only happen due to a panic")
 }
 
-fn wrap_err(config: &Config, res: Result<Response>) -> Response {
+fn wrap_err(state: BileState, res: Result<Response>) -> Response {
     match res {
         Ok(res) => res,
         Err(err) => {
             tracing::error!(err=?err, "failed to handle response");
 
-            ErrorPage::new(config)
+            ErrorPage::from(state)
                 .with_status(StatusCode::INTERNAL_SERVER_ERROR)
                 .into_response()
         }

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::StatusCode,
     response::{IntoResponse as _, Response},
 };
@@ -11,6 +11,7 @@ use crate::{
     git::Repository,
     http::{
         extractor::{ObjectName, Ref, RepoName},
+        path::Path,
         response::{ErrorPage, Html, Redirect, Result},
     },
     utils::filters,
@@ -62,7 +63,7 @@ fn inner(
 ) -> Result<Response> {
     let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };
@@ -90,7 +91,7 @@ fn inner(
         .commits_for_obj(r, state.config.log_per_page + 1, object_name)
         .context("failed to get commits for object")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };

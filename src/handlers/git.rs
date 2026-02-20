@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::{HeaderValue, StatusCode, Uri, header},
     response::{IntoResponse as _, Response},
 };
@@ -10,6 +10,7 @@ use crate::{
     git::Repository,
     http::{
         extractor::RepoName,
+        path::Path,
         response::{ErrorPage, Result},
     },
 };
@@ -39,7 +40,7 @@ pub(crate) async fn get_2(
 fn inner(state: &BileState, uri: &Uri, repo_name: &RepoName) -> Result<Response> {
     let Some(repo) = Repository::open(&state.config, repo_name).context("opening repository")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };
@@ -53,7 +54,7 @@ fn inner(state: &BileState, uri: &Uri, repo_name: &RepoName) -> Result<Response>
 
     // cant canonicalize if it doesnt exist
     if !path.exists() {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     }
@@ -63,7 +64,7 @@ fn inner(state: &BileState, uri: &Uri, repo_name: &RepoName) -> Result<Response>
     // that path got us outside of the repository structure somehow
     if !path.starts_with(repo.path()) {
         tracing::warn!("Attempt to acces file outside of repo dir: {:?}", path);
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::FORBIDDEN)
             .into_response());
     }
@@ -71,7 +72,7 @@ fn inner(state: &BileState, uri: &Uri, repo_name: &RepoName) -> Result<Response>
     // Either the requested resource does not exist or it is not
     // a file, i.e. a directory.
     if !path.is_file() {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     }

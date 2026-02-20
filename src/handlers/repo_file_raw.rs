@@ -1,7 +1,7 @@
 use std::path;
 
 use axum::{
-    extract::{Path, State},
+    extract::State,
     http::{StatusCode, header},
     response::{IntoResponse as _, Response},
 };
@@ -12,6 +12,7 @@ use crate::{
     git::Repository,
     http::{
         extractor::{ObjectName, Ref, RepoName},
+        path::Path,
         response::{ErrorPage, Result},
     },
     utils::blob_mime,
@@ -37,14 +38,14 @@ fn inner(
     let repo = match Repository::open(&state.config, repo_name).context("opening repository") {
         Ok(Some(repo)) => repo,
         Ok(None) => {
-            return Ok(ErrorPage::new(&state.config)
+            return Ok(ErrorPage::from(state)
                 .with_status(StatusCode::NOT_FOUND)
                 .into_response());
         }
         Err(err) => {
             tracing::error!(err=?err, "failed to open repository");
 
-            return Ok(ErrorPage::new(&state.config)
+            return Ok(ErrorPage::from(state)
                 .with_status(StatusCode::NOT_FOUND)
                 .into_response());
         }
@@ -56,13 +57,13 @@ fn inner(
         .commit_tree(&r#ref.0)
         .context("failed to get commit tree")?
     else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };
 
     let Some(blob) = repo.tree_blob(&tree, path)? else {
-        return Ok(ErrorPage::new(&state.config)
+        return Ok(ErrorPage::from(state)
             .with_status(StatusCode::NOT_FOUND)
             .into_response());
     };
