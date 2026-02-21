@@ -8,12 +8,12 @@ use axum::{
 
 use crate::{
     BileState,
-    error::Context as _,
+    error::{Context as _, Result},
     git::Repository,
     http::{
         extractor::{ObjectName, Ref, RepoName},
         path::Path,
-        response::{ErrorPage, Result},
+        response::ErrorPage,
     },
     utils::blob_mime,
 };

@@ -14,12 +14,12 @@ use syntect::{
 use crate::{
     BileState,
     config::Config,
-    error::Context as _,
+    error::{Context as _, Result},
     git::Repository,
     http::{
         extractor::{ObjectName, Ref, RepoName},
         path::Path,
-        response::{ErrorPage, Html, Redirect, Result},
+        response::{ErrorPage, Html, Redirect},
     },
     utils::{blob_mime, filters},
 };
@@ -168,7 +168,7 @@ fn render(
     spec: &str,
     commit: &git2::Commit<'_>,
     blob: &git2::Blob<'_>,
-) -> crate::error::Result<String> {
+) -> Result<String> {
     let extension = path
         .extension()
         .and_then(std::ffi::OsStr::to_str)

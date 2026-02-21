@@ -7,12 +7,12 @@ use axum::{
 use crate::{
     BileState,
     config::Config,
-    error::Context as _,
+    error::{Context as _, Result},
     git::Repository,
     http::{
         extractor::{RepoName, Tag},
         path::Path,
-        response::{ErrorPage, Html, Redirect, Result},
+        response::{ErrorPage, Html, Redirect},
     },
     utils::filters,
 };

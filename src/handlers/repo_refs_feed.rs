@@ -6,12 +6,12 @@ use axum::{
 
 use crate::{
     BileState,
-    error::Context as _,
+    error::{Context as _, Result},
     git::{Repository, TagEntry},
     http::{
         extractor::RepoName,
         path::Path,
-        response::{ErrorPage, Result, Xml},
+        response::{ErrorPage, Xml},
     },
     utils::filters,
 };

@@ -7,8 +7,6 @@ use axum::{
 
 use crate::{config::Config, http::BileState};
 
-pub(crate) type Result<T = Response, E = crate::error::Error> = std::result::Result<T, E>;
-
 pub(crate) struct Css<T>(pub T);
 
 impl<T: IntoResponse> IntoResponse for Css<T> {

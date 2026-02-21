@@ -6,13 +6,9 @@ use axum::{
 
 use crate::{
     BileState,
-    error::Context as _,
+    error::{Context as _, Result},
     git::Repository,
-    http::{
-        extractor::RepoName,
-        path::Path,
-        response::{ErrorPage, Result},
-    },
+    http::{extractor::RepoName, path::Path, response::ErrorPage},
 };
 
 #[tracing::instrument(skip_all)]

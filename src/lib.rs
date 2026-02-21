@@ -244,8 +244,10 @@ use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 
 use crate::{
     config::Config,
-    http::BileState,
-    http::response::{Css, Ico, Json, Png, Text},
+    http::{
+        BileState,
+        response::{Css, Ico, Json, Png, Text},
+    },
 };
 
 #[global_allocator]

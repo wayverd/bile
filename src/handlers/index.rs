@@ -8,9 +8,9 @@ use axum::{
 use crate::{
     BileState,
     config::Config,
-    error::Context as _,
+    error::{Context as _, Result},
     git::Repository,
-    http::response::{Html, Result},
+    http::response::Html,
     utils::filters,
 };
 
