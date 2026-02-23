@@ -21,7 +21,9 @@ pub(crate) fn render(syntaxes: &SyntaxSet, input: &str) -> String {
         syntax_set: syntaxes,
     };
 
-    let options = Options::default();
+    let mut options = Options::default();
+
+    options.extension.tasklist = true;
 
     let mut plugins = Plugins::default();
 
