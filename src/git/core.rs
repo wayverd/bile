@@ -84,7 +84,7 @@ impl Repository {
                 format = ReadmeFormat::Markdown;
                 self.inner.revparse_single("HEAD:readme.md")
             })
-            .or_else(|_| self.inner.revparse_single("HEAD:README.mdown"))
+            .or_else(|_| self.inner.revparse_single("HEAD:README.md"))
             .or_else(|_| self.inner.revparse_single("HEAD:readme.mdown"))
             .or_else(|_| self.inner.revparse_single("HEAD:README.mdown"))
             .or_else(|_| self.inner.revparse_single("HEAD:readme.markdown"))
