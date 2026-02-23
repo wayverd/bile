@@ -287,25 +287,6 @@ impl Bile {
 
     #[rustfmt::skip]
     pub fn routes(&self) -> Router {
-        // let backend = MokaBackend::builder().max_entries(10_000).build();
-
-        // let config = hitbox::Config::builder()
-        //     .request_predicate(predicates::request::Method::new(http::Method::GET).unwrap())
-        //     .response_predicate(hitbox::Neutral::new().status_code_class(predicates::response::StatusClass::Success))
-        //     .extractor(extractors::Method::new())
-        //     .policy(
-        //         hitbox::policy::PolicyConfig::builder()
-        //             .ttl(Duration::from_secs(60))
-        //             .stale(Duration::from_secs(30))
-        //             .build(),
-        //     )
-        //     .build();
-
-        // let cache = hitbox_tower::Cache::builder()
-        //     .backend(backend.clone())
-        //     .config(config)
-        //     .build();
-
         Router::new()
             .route("/", get(handlers::index::get))
             // assets
@@ -353,7 +334,11 @@ impl Bile {
                 TraceLayer::new_for_http(),
                 TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(10)),
                 CacheLayer::with_lifespan(Duration::from_secs(60)).use_stale_on_failure(),
-                HelmetLayer::with_defaults(),
+                {
+                    let mut layer = HelmetLayer::with_defaults();
+                    layer.enable(http::PermissionsPolicy);
+                    layer
+                },
             ))
     }
 }

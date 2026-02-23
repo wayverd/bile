@@ -60,3 +60,19 @@ fn wrap_err(state: BileState, res: Result<Response>) -> Response {
         }
     }
 }
+
+pub(crate) struct PermissionsPolicy;
+
+impl tower_helmet::IntoHeader for PermissionsPolicy {
+    fn header_name(&self) -> http::HeaderName {
+        http::HeaderName::from_static("permissions-policy")
+    }
+
+    fn header_value(
+        &self,
+    ) -> std::result::Result<http::HeaderValue, http::header::InvalidHeaderValue> {
+        http::HeaderValue::from_str(
+            "accelerometer=(),ambient-light-sensor=(),attribution-reporting=(),autoplay=(),bluetooth=(),browsing-topics=(),camera=(),captured-surface-control=(),clipboard-read=(),clipboard-write=(),compute-pressure=(),display-capture=(),document-domain=(),encrypted-media=(),fullscreen=(),gamepad=(),geolocation=(),gyroscope=(),hid=(),identity-credentials-get=(),idle-detection=(),interest-cohort=(),local-fonts=(),magnetometer=(),microphone=(),midi=(),on-device-speech-recognition=(),otp-credentials=(),payment=(),picture-in-picture=(),private-state-token-issuance=(),private-state-token-redemption=(),publickey-credentials-create=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),speaker-selection=(),storage-access=(),sync-xhr=(),usb=(),web-share=(),window-management=(),xr-spatial-tracking=()",
+        )
+    }
+}
