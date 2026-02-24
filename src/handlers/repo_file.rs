@@ -181,7 +181,7 @@ fn render(
 
         let output = match mime.type_() {
             mime::TEXT => unreachable!("git detected this file as binary"),
-            mime::IMAGE => format!(
+            mime::IMAGE | mime::BMP | mime::GIF | mime::JPEG | mime::PNG | mime::SVG => format!(
                 "<img src=\"/{}/tree/{}/raw/{}\" />",
                 repo_name,
                 spec,
@@ -194,7 +194,10 @@ fn render(
                 spec,
                 path.display()
             ),
-            _ => "Cannot display binary file.".to_string(),
+            name => {
+                tracing::warn!(mime=?mime, name=?name, "unsupported mime type");
+                "Cannot display binary file.".to_string()
+            }
         };
 
         return Ok(output);

@@ -22,6 +22,7 @@ http = "=1.4.0"
 jiff = "=0.2.20"
 mimalloc = "=0.1.48"
 mime = "=0.3.17"
+mime_guess = "2.0.5"
 num-conv = "=0.2.0"
 serde = { version = "=1.0.228", features = ["derive"] }
 syntect = { version = "=5.3.0", default-features = false, features = ["default-onig"] }

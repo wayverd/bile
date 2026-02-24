@@ -3,7 +3,7 @@ pub(crate) mod markdown;
 
 #[must_use]
 pub(crate) fn blob_mime(blob: &git2::Blob<'_>, extension: &str) -> mime::Mime {
-    extension.parse().unwrap_or_else(|_| {
+    mime_guess::MimeGuess::from_ext(extension).first_or_else(|| {
         if blob.is_binary() {
             mime::APPLICATION_OCTET_STREAM
         } else {
