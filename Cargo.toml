@@ -10,11 +10,9 @@ edition = "2024"
 license = "AGPL-3.0-or-later"
 
 [dependencies]
-ansi-to-html = "=0.2.2"
 anyhow = "=1.0.101"
 askama = "=0.15.4"
 axum = { version = "=0.8.8", features = ["tracing"] }
-axum-extra = "=0.12.5"
 axum-response-cache = "=0.4.0"
 clap = { version = "=4.5.59", features = ["derive", "string"] }
 comrak = { version = "=0.50.0", default-features = false }
@@ -24,11 +22,9 @@ http = "=1.4.0"
 jiff = "=0.2.20"
 mimalloc = "=0.1.48"
 mime = "=0.3.17"
-moka = { version = "=0.12.13", features = ["future"] }
 num-conv = "=0.2.0"
 serde = { version = "=1.0.228", features = ["derive"] }
 syntect = { version = "=5.3.0", default-features = false, features = ["default-onig"] }
-thiserror = "=2.0.18"
 tokio = { version = "=1.49.0", features = ["macros", "rt-multi-thread", "signal", "fs"] }
 tower = "=0.5.3"
 tower-helmet = "=0.3.0"

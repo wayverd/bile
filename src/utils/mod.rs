@@ -1,4 +1,3 @@
-pub(crate) mod cache;
 pub(crate) mod filters;
 pub(crate) mod markdown;
 
