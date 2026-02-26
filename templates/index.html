@@ -1,19 +1,28 @@
 {% extends "base.html" %}
 
+{% macro render_section(section) %}
+  {% if section.name.is_some() %}
+    <h2>{{ section.name.as_deref().unwrap_or("") }}</h2>
+  {% endif %}
+  {% for repo in section.repos %}
+    <table class="repo">
+      <tbody>
+        <tr>
+          <td class="repo-link"><a href="{{repo|repo_name|urlencode_strict}}">{{repo|repo_name}}</a></td>
+          <td class="repo-last-updated">last updated {{repo|last_modified|format_datetime("%Y-%m-%d")}}</td>
+        </tr>
+        <tr>
+          <td class="repo-description" colspan="2">{{repo|description}}</td>
+        </tr>
+      </tbody>
+    </table>
+  {% endfor %}
+{% endmacro %}
+
 {% block content %}
   <div>
-    {% for repo in repos %}
-      <table class="repo">
-        <tbody>
-          <tr>
-            <td class="repo-link"><a href="{{repo|repo_name|urlencode_strict}}">{{repo|repo_name}}</a></td>
-            <td class="repo-last-updated">last updated {{repo|last_modified|format_datetime("%Y-%m-%d")}}</td>
-          </tr>
-          <tr>
-            <td class="repo-description" colspan="2">{{repo|description}}</td>
-          </tr>
-        </tbody>
-      </table>
+    {% for section in sections %}
+      {{ render_section(section=section) }}
     {% endfor %}
   </div>
 {% endblock %}

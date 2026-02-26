@@ -18,6 +18,11 @@ use crate::{
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
     config: &'a Config,
+    sections: Vec<Section>,
+}
+
+struct Section {
+    name: Option<String>,
     repos: Vec<Repository>,
 }
 
@@ -30,12 +35,12 @@ fn inner(state: &BileState) -> Result<Response> {
     let Ok(read) = fs::read_dir(&state.config.project_root) else {
         return Ok(Html(IndexTemplate {
             config: &state.config,
-            repos: Vec::new(),
+            sections: Vec::new(),
         })
         .into_response());
     };
 
-    let mut repos = Vec::new();
+    let mut sections = Vec::new();
 
     for entry in read {
         let entry = entry.context("failed to open directory entry")?;
@@ -65,12 +70,27 @@ fn inner(state: &BileState) -> Result<Response> {
             continue;
         }
 
-        repos.push(repo);
+        let repo_section = repo.section();
+        let section = sections
+            .iter_mut()
+            .find(|s: &&mut Section| s.name == repo_section);
+        match section {
+            Some(section) => section.repos.push(repo),
+            None => sections.push(Section {
+                name: repo_section,
+                repos: vec![repo],
+            }),
+        }
+    }
+
+    sections.sort_by(|a, b| a.name.cmp(&b.name));
+    for section in &mut sections {
+        section.repos.sort_by(|a, b| a.name().cmp(&b.name()));
     }
 
     Ok(Html(IndexTemplate {
         config: &state.config,
-        repos,
+        sections,
     })
     .into_response())
 }

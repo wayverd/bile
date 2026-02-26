@@ -51,11 +51,19 @@ impl Repository {
     }
 
     #[must_use]
-    pub(crate) fn owner(&self) -> String {
+    pub(crate) fn owner(&self) -> Option<String> {
         self.inner
             .config()
             .and_then(|config| config.get_string("gitweb.owner"))
-            .unwrap_or_default()
+            .ok()
+    }
+
+    #[must_use]
+    pub(crate) fn section(&self) -> Option<String> {
+        self.inner
+            .config()
+            .and_then(|config| config.get_string("bile.section"))
+            .ok()
     }
 
     #[must_use]

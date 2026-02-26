@@ -78,7 +78,7 @@ pub(crate) fn last_modified(repo: &Repository, _: &dyn askama::Values) -> askama
 
 #[askama::filter_fn]
 pub(crate) fn repo_owner(repo: &Repository, _: &dyn askama::Values) -> askama::Result<String> {
-    Ok(repo.owner())
+    Ok(repo.owner().unwrap_or_default())
 }
 
 #[askama::filter_fn]
