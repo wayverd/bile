@@ -24,7 +24,7 @@ youll need the rust compiler and a c compiler
 
 run `cargo build --release`
 
-the resulting binary is in ``target/release`
+the resulting binary is in `target/release`
 
 ## setup
 
